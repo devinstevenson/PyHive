@@ -23,7 +23,6 @@ import sys
 import thrift.protocol.TBinaryProtocol
 import thrift.transport.TSocket
 import thrift.transport.TTransport
-import thrift_sasl
 
 # PEP 249 module globals
 apilevel = '2.0'
@@ -51,6 +50,7 @@ class HiveParamEscaper(common.ParamEscaper):
             .replace('\n', '\\n')
             .replace('\t', '\\t')
         )
+
 
 _escaper = HiveParamEscaper()
 
@@ -118,6 +118,10 @@ class Connection(object):
                 # NOSASL corresponds to hive.server2.authentication=NOSASL in hive-site.xml
                 self._transport = thrift.transport.TTransport.TBufferedTransport(socket)
             elif auth in ('LDAP', 'KERBEROS', 'NONE'):
+                # Defer import so package dependency is optional
+                import sasl
+                import thrift_sasl
+
                 if auth == 'KERBEROS':
                     # KERBEROS mode in hive.server2.authentication is GSSAPI in sasl library
                     sasl_auth = 'GSSAPI'
@@ -333,7 +337,7 @@ class Cursor(common.DBAPICursor):
         if not new_data:
             self._state = self._STATE_FINISHED
 
-    def poll(self):
+    def poll(self, get_progress_update=True):
         """Poll for and return the raw status data provided by the Hive Thrift REST API.
         :returns: ``ttypes.TGetOperationStatusResp``
         :raises: ``ProgrammingError`` when no query has been started
@@ -344,7 +348,8 @@ class Cursor(common.DBAPICursor):
             raise ProgrammingError("No query yet")
 
         req = ttypes.TGetOperationStatusReq(
-            operationHandle=self._operationHandle
+            operationHandle=self._operationHandle,
+            getProgressUpdate=get_progress_update,
         )
         response = self._connection.client.GetOperationStatus(req)
         _check_status(response)
