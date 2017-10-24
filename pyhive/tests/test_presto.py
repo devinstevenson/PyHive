@@ -185,6 +185,7 @@ class TestPresto(unittest.TestCase, DBAPITestCase):
             ValueError, 'Protocol.*https.*password', lambda: presto.connect(
                 host=_HOST, username='user', password='secret', protocol='http').cursor()
         )
+<<<<<<< HEAD
 
     def test_invalid_password_and_kwargs(self):
         """password and requests_kwargs are incompatible"""
@@ -220,3 +221,5 @@ class TestPresto(unittest.TestCase, DBAPITestCase):
             cursor = connection.cursor()
             cursor.execute('SELECT * FROM one_row')
             self.assertEqual(cursor.fetchall(), [(1,)])
+=======
+>>>>>>> feature-pure-sasl-win

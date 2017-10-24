@@ -106,6 +106,7 @@ class Cursor(common.DBAPICursor):
         self._host = host
         self._port = port
         self._username = username or getpass.getuser()
+        self._password = password
         self._catalog = catalog
         self._schema = schema
         self._arraysize = 1
