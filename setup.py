@@ -20,6 +20,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)
 
+
 with open('README.rst') as readme:
     long_description = readme.read()
 
@@ -48,7 +49,7 @@ setup(
             # Installing sasl on Windows is rather painful, so use the pure python
             'pure-sasl>=0.3.0' if WINDOWS else 'sasl>=0.2.1',
             'thrift>=0.10.0', 'thrift_sasl>=0.1.0'],
-        'sqlalchemy': ['sqlalchemy>=0.6.0'],
+        'sqlalchemy': ['sqlalchemy>=0.7.10'],
     },
     tests_require=[
         'mock>=1.0.0',
@@ -57,8 +58,8 @@ setup(
         'pytest-cov',
         'requests>=1.0.0',
         'sasl>=0.2.1',
-        'sqlalchemy>=0.6.0',
-        'thrift>=0.8.0',
+        'sqlalchemy>=0.7.10',
+        'thrift>=0.10.0',
     ],
     cmdclass={'test': PyTest},
     package_data={
