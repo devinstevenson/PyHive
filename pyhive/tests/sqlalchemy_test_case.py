@@ -41,6 +41,13 @@ class SqlAlchemyTestCase(with_metaclass(abc.ABCMeta, object)):
         self.assertEqual(len(rows[0]), 1)
 
     @with_engine_connection
+    def test_one_row_complex_null(self, engine, connection):
+        one_row_complex_null = Table('one_row_complex_null', MetaData(bind=engine), autoload=True)
+        rows = one_row_complex_null.select().execute().fetchall()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(list(rows[0]), [None] * len(rows[0]))
+
+    @with_engine_connection
     def test_reflect_no_such_table(self, engine, connection):
         """reflecttable should throw an exception on an invalid table"""
         self.assertRaises(
@@ -128,8 +135,6 @@ class SqlAlchemyTestCase(with_metaclass(abc.ABCMeta, object)):
         self.assertTrue(Table('one_row', MetaData(bind=engine)).exists())
         self.assertFalse(Table('this_table_does_not_exist', MetaData(bind=engine)).exists())
 
-    @unittest.skipIf(StrictVersion(sqlalchemy.__version__) < StrictVersion('0.6.0'),
-                     "visitor stuff for changing char_length -> length not available yet")
     @with_engine_connection
     def test_char_length(self, engine, connection):
         one_row_complex = Table('one_row_complex', MetaData(bind=engine), autoload=True)

@@ -43,12 +43,12 @@ setup(
         'future',
     ],
     extras_require={
-        "Presto": ['requests>=1.0.0'],
-        "Hive": [
+        'presto': ['requests>=1.0.0'],
+        'hive': [
             # Installing sasl on Windows is rather painful, so use the pure python
             'pure-sasl>=0.3.0' if WINDOWS else 'sasl>=0.2.1',
             'thrift>=0.10.0', 'thrift_sasl>=0.1.0'],
-        "SQLAlchemy": ['sqlalchemy>=0.5.0'],
+        'sqlalchemy': ['sqlalchemy>=0.6.0'],
     },
     tests_require=[
         'mock>=1.0.0',
@@ -57,7 +57,7 @@ setup(
         'pytest-cov',
         'requests>=1.0.0',
         'sasl>=0.2.1',
-        'sqlalchemy>=0.5.0',
+        'sqlalchemy>=0.6.0',
         'thrift>=0.8.0',
     ],
     cmdclass={'test': PyTest},
@@ -65,13 +65,7 @@ setup(
         '': ['*.rst'],
     },
     entry_points={
-        # New versions
         'sqlalchemy.dialects': [
-            'hive = pyhive.sqlalchemy_hive:HiveDialect',
-            'presto = pyhive.sqlalchemy_presto:PrestoDialect',
-        ],
-        # Version 0.5
-        'sqlalchemy.databases': [
             'hive = pyhive.sqlalchemy_hive:HiveDialect',
             'presto = pyhive.sqlalchemy_presto:PrestoDialect',
         ],
