@@ -13,6 +13,7 @@ from pyhive import common
 from pyhive.common import DBAPITypeObject
 # Make all exceptions visible in this module per DB-API
 from pyhive.exc import *  # noqa
+import re
 import base64
 import getpass
 import logging
@@ -32,6 +33,7 @@ paramstyle = 'pyformat'  # Python extended format codes, e.g. ...WHERE name=%(na
 
 _logger = logging.getLogger(__name__)
 _escaper = common.ParamEscaper()
+_regex = re.compile(r'^\w+')
 
 
 def connect(*args, **kwargs):
@@ -165,7 +167,9 @@ class Cursor(common.DBAPICursor):
             return None
         return [
             # name, type_code, display_size, internal_size, precision, scale, null_ok
-            (col['name'], col['type'], None, None, None, None, True)
+            (col['name'],
+             _regex.search(col['type']).group(0),
+             None, None, None, None, True)
             for col in self._columns
         ]
 
