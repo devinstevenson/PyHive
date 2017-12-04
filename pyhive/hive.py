@@ -119,7 +119,6 @@ class Connection(object):
                 self._transport = thrift.transport.TTransport.TBufferedTransport(socket)
             elif auth in ('LDAP', 'KERBEROS', 'NONE'):
                 # Defer import so package dependency is optional
-                import sasl
                 import thrift_sasl
 
                 if auth == 'KERBEROS':
