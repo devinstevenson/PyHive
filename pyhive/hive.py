@@ -131,7 +131,7 @@ class Connection(object):
                         # Password doesn't matter in NONE mode, just needs to be nonempty.
                         password = 'x'
 
-                if WINDOWS:
+                if not WINDOWS:
                     import sasl
 
                     def sasl_factory():
