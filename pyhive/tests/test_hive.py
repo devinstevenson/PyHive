@@ -8,12 +8,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import contextlib
+import os
+import socket
 import subprocess
 import time
 import unittest
 
 import mock
-import os
 import sasl
 import thrift.transport.TSocket
 import thrift.transport.TTransport
@@ -54,6 +55,7 @@ class TestHive(unittest.TestCase, DBAPITestCase):
             ('one_row_complex.double', 'DOUBLE_TYPE', None, None, None, None, True),
             ('one_row_complex.string', 'STRING_TYPE', None, None, None, None, True),
             ('one_row_complex.timestamp', 'TIMESTAMP_TYPE', None, None, None, None, True),
+            ('one_row_complex.date', 'DATE_TYPE', None, None, None, None, True),
             ('one_row_complex.binary', 'BINARY_TYPE', None, None, None, None, True),
             ('one_row_complex.array', 'ARRAY_TYPE', None, None, None, None, True),
             ('one_row_complex.map', 'MAP_TYPE', None, None, None, None, True),
@@ -72,6 +74,7 @@ class TestHive(unittest.TestCase, DBAPITestCase):
             0.25,
             'a string',
             '1970-01-01 00:00:00.0',
+            '1970-02-01',
             b'123',
             '[1,2]',
             '{1:2,3:4}',
@@ -156,8 +159,7 @@ class TestHive(unittest.TestCase, DBAPITestCase):
         des = os.path.join('/', 'etc', 'hive', 'conf', 'hive-site.xml')
         try:
             subprocess.check_call(['sudo', 'cp', orig_ldap, des])
-            subprocess.check_call(['sudo', 'service', 'hive-server2', 'restart'])
-            time.sleep(10)
+            _restart_hs2()
             with contextlib.closing(hive.connect(
                 host=_HOST, username='existing', auth='LDAP', password='testpw')
             ) as connection:
@@ -173,14 +175,13 @@ class TestHive(unittest.TestCase, DBAPITestCase):
 
         finally:
             subprocess.check_call(['sudo', 'cp', orig_none, des])
-            subprocess.check_call(['sudo', 'service', 'hive-server2', 'restart'])
-            time.sleep(10)
+            _restart_hs2()
 
     def test_invalid_ldap_config(self):
         """password should be set if and only if using LDAP"""
-        self.assertRaisesRegexp(ValueError, 'password.*LDAP',
+        self.assertRaisesRegexp(ValueError, 'Password.*LDAP',
                                 lambda: hive.connect(_HOST, password=''))
-        self.assertRaisesRegexp(ValueError, 'password.*LDAP',
+        self.assertRaisesRegexp(ValueError, 'Password.*LDAP',
                                 lambda: hive.connect(_HOST, auth='LDAP'))
 
     def test_invalid_kerberos_config(self):
@@ -216,3 +217,35 @@ class TestHive(unittest.TestCase, DBAPITestCase):
             with contextlib.closing(conn.cursor()) as cursor:
                 cursor.execute('SELECT * FROM one_row')
                 self.assertEqual(cursor.fetchall(), [(1,)])
+
+    def test_custom_connection(self):
+        rootdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        orig_ldap = os.path.join(rootdir, 'scripts', 'travis-conf', 'hive', 'hive-site-custom.xml')
+        orig_none = os.path.join(rootdir, 'scripts', 'travis-conf', 'hive', 'hive-site.xml')
+        des = os.path.join('/', 'etc', 'hive', 'conf', 'hive-site.xml')
+        try:
+            subprocess.check_call(['sudo', 'cp', orig_ldap, des])
+            _restart_hs2()
+            with contextlib.closing(hive.connect(
+                    host=_HOST, username='the-user', auth='CUSTOM', password='p4ssw0rd')
+            ) as connection:
+                with contextlib.closing(connection.cursor()) as cursor:
+                    cursor.execute('SELECT * FROM one_row')
+                    self.assertEqual(cursor.fetchall(), [(1,)])
+
+            self.assertRaisesRegexp(
+                TTransportException, 'Error validating the login',
+                lambda: hive.connect(
+                    host=_HOST, username='the-user', auth='CUSTOM', password='wrong')
+            )
+
+        finally:
+            subprocess.check_call(['sudo', 'cp', orig_none, des])
+            _restart_hs2()
+
+
+def _restart_hs2():
+    subprocess.check_call(['sudo', 'service', 'hive-server2', 'restart'])
+    with contextlib.closing(socket.socket()) as s:
+        while s.connect_ex(('localhost', 10000)) != 0:
+            time.sleep(1)

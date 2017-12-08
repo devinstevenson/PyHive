@@ -72,10 +72,10 @@ _type_map = {
     'real': types.Float,
     'double': types.Float,
     'varchar': types.String,
-    'timestamp': types.TIMESTAMP,
-    'date': types.DATE,
+    'timestamp': PrestoTimestamp,
+    'date': PrestoDate,
     'varbinary': types.VARBINARY,
-    'decimal': types.DECIMAL
+    'decimal': PrestoDecimal
 }
 
 

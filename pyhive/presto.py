@@ -33,12 +33,11 @@ paramstyle = 'pyformat'  # Python extended format codes, e.g. ...WHERE name=%(na
 
 _logger = logging.getLogger(__name__)
 _escaper = common.ParamEscaper()
-_regex = re.compile(r'^\w+')
 
 
 def connect(*args, **kwargs):
-    """Constructor for creating a connection to the database. See class :py:class:`Connection` for
-    arguments.
+    """Constructor for creating a connection to the database.
+    See class :py:class:`Connection` for arguments.
 
     :returns: a :py:class:`Connection` object.
     """
@@ -97,7 +96,7 @@ class Cursor(common.DBAPICursor):
         :param password: string -- Deprecated. Defaults to ``None``.
             Using BasicAuth, requires ``https``.
             Prefer ``requests_kwargs={'auth': HTTPBasicAuth(username, password)}``.
-            May not be specified with ``requests_kwargs``.
+            May not be specified with ``requests_kwargs['auth']``.
         :param requests_session: a ``requests.Session`` object for advanced usage. If absent, this
             class will use the default requests behavior of making a new session per HTTP request.
             Caller is responsible for closing session.
@@ -121,9 +120,9 @@ class Cursor(common.DBAPICursor):
 
         self._requests_session = requests_session or requests
 
-        if password is not None and requests_kwargs is not None:
-            raise ValueError("Cannot use both password and requests_kwargs")
         requests_kwargs = dict(requests_kwargs) if requests_kwargs is not None else {}
+        if password is not None and 'auth' in requests_kwargs:
+            raise ValueError("Cannot use both password and requests_kwargs authentication")
         for k in ('method', 'url', 'data', 'headers'):
             if k in requests_kwargs:
                 raise ValueError("Cannot override requests argument {}".format(k))
@@ -165,13 +164,24 @@ class Cursor(common.DBAPICursor):
         )
         if self._columns is None:
             return None
-        return [
-            # name, type_code, display_size, internal_size, precision, scale, null_ok
-            (col['name'],
-             _regex.search(col['type']).group(0),
-             None, None, None, None, True)
-            for col in self._columns
-        ]
+
+        def _col_process(col_name, col_type):
+            """Strip scale and precision from decimal col_type. This allows `decimal` to
+            be mapped thru sqlalchemy to Decimal type.
+            :param col_name: string - column name
+            :param col_type: string - column type
+            :return: name, type_code, display_size, internal_size, precision, scale, null_ok
+            """
+            if col_type.startswith('decimal'):
+                m = re.search(r'(\d+),(\d+)', col_type)
+                precision = int(m.group(1))
+                scale = int(m.group(2))
+                col_type = 'decimal'
+            else:
+                precision = scale = None
+            return col_name, col_type, None, None, precision, scale, True
+
+        return [_col_process(col['name'], col['type']) for col in self._columns]
 
     def execute(self, operation, parameters=None):
         """Prepare and execute a database operation (query or command).
@@ -283,7 +293,6 @@ class Cursor(common.DBAPICursor):
         if 'nextUri' not in response_json:
             self._state = self._STATE_FINISHED
         if 'error' in response_json:
-            assert not self._nextUri, "Should not have nextUri if failed"
             raise DatabaseError(response_json['error'])
 
 

@@ -58,7 +58,7 @@ setup(
         'pytest-cov',
         'requests>=1.0.0',
         'sasl>=0.2.1',
-        'sqlalchemy>=0.7.10',
+        'sqlalchemy>=0.8.7',
         'thrift>=0.10.0',
     ],
     cmdclass={'test': PyTest},

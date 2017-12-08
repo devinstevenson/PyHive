@@ -60,12 +60,13 @@ class TestPresto(unittest.TestCase, DBAPITestCase):
             ('double', 'double', None, None, None, None, True),
             ('string', 'varchar', None, None, None, None, True),
             ('timestamp', 'timestamp', None, None, None, None, True),
+            ('date', 'date', None, None, None, None, True),
             ('binary', 'varbinary', None, None, None, None, True),
             ('array', 'array(integer)', None, None, None, None, True),
             ('map', 'map(integer,integer)', None, None, None, None, True),
             ('struct', 'row(a integer,b integer)', None, None, None, None, True),
             # ('union', 'varchar', None, None, None, None, True),
-            ('decimal', 'decimal(10,1)', None, None, None, None, True),
+            ('decimal', 'decimal', None, None, 10, 1, True),
         ])
         rows = cursor.fetchall()
         expected = [(
@@ -78,6 +79,7 @@ class TestPresto(unittest.TestCase, DBAPITestCase):
             0.25,
             'a string',
             '1970-01-01 00:00:00.000',
+            '1970-02-01',
             b'123',
             [1, 2],
             {"1": 2, "3": 4},  # Presto converts all keys to strings so that they're valid JSON
@@ -182,11 +184,11 @@ class TestPresto(unittest.TestCase, DBAPITestCase):
         )
 
     def test_invalid_password_and_kwargs(self):
-        """password and requests_kwargs are incompatible"""
+        """password and requests_kwargs authentication are incompatible"""
         self.assertRaisesRegexp(
             ValueError, 'Cannot use both', lambda: presto.connect(
                 host=_HOST, username='user', password='secret', protocol='https',
-                requests_kwargs={}
+                requests_kwargs={'auth': requests.auth.HTTPBasicAuth('user', 'secret')}
             ).cursor()
         )
 
